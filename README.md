@@ -60,12 +60,33 @@ Novos cidadãos e empresas podem se cadastrar pela interface. A criação dos pe
 - Gestor com análise dos relatos, revisão de prioridade, designação individual de agente, agendamento e encerramento administrativo.
 - Agente com atendimentos atribuídos, localização, início, inspeção, recomendações e conclusão.
 - Histórico e resultados autorizados para o solicitante.
-- GeoRadar do município piloto de São Paulo, com indicadores e gráfico do InfoDengue, mapa base OpenStreetMap e acesso ao mapa epidemiológico oficial.
+- GeoRadar com busca pelo nome e UF dos municípios brasileiros, limite municipal do IBGE, preenchimento por classificação AEGIS, indicadores e gráficos do InfoDengue.
 - LIA conectada à rota Java que usa a OpenAI. Se a chave estiver ausente ou inválida, a interface exibe a falha retornada pelo serviço.
 
 O agendamento usa dois campos: **data em DD/MM/AAAA** e **hora em HH:MM**. O backend valida a data futura e a disponibilidade da equipe no horário de São Paulo.
 
-O mapa base não representa a localização individual dos relatos. Os dados epidemiológicos exibidos correspondem ao ano escolhido; a previsão é a estimativa acadêmica que já existe no backend. Mapa e dados externos dependem de conexão à internet.
+O mapa colore o território municipal e não representa a localização individual dos relatos. Os dados epidemiológicos exibidos correspondem ao ano escolhido; a previsão é a estimativa acadêmica que já existe no backend. Mapa e dados externos dependem de conexão à internet.
+
+## GeoRadar por município
+
+Digite o nome do município, com ou sem acento, e escolha o resultado com a UF correta. A seleção atualiza automaticamente o mapa, os casos, o gráfico e a previsão. O código oficial é resolvido internamente; o usuário não precisa digitá-lo. O ano dos dados também pode ser alterado.
+
+O mapa usa Leaflet e contornos oficiais da API de malhas do IBGE. O zoom se ajusta ao limite selecionado, o contorno fica azul e o preenchimento segue a classificação AEGIS. Clique no território para consultar o resumo ou use **Centralizar** para reenquadrá-lo.
+
+A métrica acadêmica usa os **casos notificados da última semana disponível no ano selecionado**:
+
+| Classificação AEGIS | Casos na semana                      | Cor      |
+| ------------------- | ------------------------------------ | -------- |
+| OK                  | 0 a 99                               | Verde    |
+| Instável            | 100 a 299                            | Amarelo  |
+| Crítico             | 300 ou mais                          | Vermelho |
+| Sem dados           | Ausência de casos válidos no período | Cinza    |
+
+Os limites estão em `LIMITES_AEGIS`, no arquivo `src/georadar.js`. A legenda é calculada a partir desses mesmos valores. São limites de demonstração do protótipo e não representam uma classificação epidemiológica oficial. O alerta original do InfoDengue permanece identificado separadamente, com link para a fonte. Zero casos é diferente de ausência de informação.
+
+A interface mostra a semana e o ano de referência. Ao trocar de cidade, respostas antigas são descartadas e a cor anterior é removida até a consulta terminar. Se não houver indicadores ou a API falhar, o limite municipal continua disponível, em cinza. Busca, contorno e mapa base dependem dos serviços externos; uma falha tem mensagem e opção de tentar novamente.
+
+Fontes: [municípios do IBGE](https://servicodados.ibge.gov.br/api/docs/localidades), [malhas simplificadas do IBGE](https://servicodados.ibge.gov.br/api/docs/malhas?versao=3), [indicadores do InfoDengue](https://info.dengue.mat.br/services/api), [metodologia do alerta original](https://info.dengue.mat.br/informacoes/) e [Leaflet](https://leafletjs.com/reference-1.9.4.html).
 
 ## Conexão local
 
@@ -89,7 +110,7 @@ npm run build
 npm run preview
 ```
 
-Os testes verificam o contrato de login, o encerramento de sessão ao escolher um perfil incorreto, mensagens de erro e conversão da data/hora. A compilação gera a pasta `dist`. O preview local usa **http://127.0.0.1:4173**, com o mesmo encaminhamento de API.
+Os testes verificam as faixas de classificação, busca sem acentos e com UF, contornos GeoJSON e escolha da última semana disponível, além do contrato de login, o encerramento de sessão ao escolher um perfil incorreto, mensagens de erro e conversão da data/hora. A compilação gera a pasta `dist`. O preview local usa **http://127.0.0.1:4173**, com o mesmo encaminhamento de API.
 
 Para atualizar depois de novas alterações:
 

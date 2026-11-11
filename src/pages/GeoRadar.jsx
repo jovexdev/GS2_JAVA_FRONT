@@ -6,55 +6,65 @@ import {
   RefreshCw,
   TrendingUp,
 } from "lucide-react";
-import { useApi } from "../hooks";
 import { numero } from "../constants";
 import {
-  Button,
-  ErrorState,
-  Field,
-  Loading,
-  PageTitle,
-} from "../components/ui";
-const semana = (valor) =>
-  String(valor).length === 6 ? String(valor).slice(4) : String(valor);
+  classificarCasos,
+  nomeMunicipio,
+  SITUACOES,
+  ultimaSemana,
+  semanaEpidemiologica,
+} from "../georadar";
+import { useGeoResource, useMalha, useMunicipios } from "../geoResources";
+import MunicipioSearch from "../components/MunicipioSearch";
+import MunicipioMap from "../components/MunicipioMap";
+import { Alert, Button, Field, PageTitle } from "../components/ui";
+
+const INICIAL = { id: 3550308, nome: "São Paulo", uf: "SP" };
+const NOMES_ALERTA = { 1: "Verde", 2: "Amarelo", 3: "Laranja", 4: "Vermelho" };
 export default function GeoRadar() {
   const current = new Date().getFullYear();
-  const [year, setYear] = useState(current - 1);
-  const [draft, setDraft] = useState(current - 1);
-  const state = useApi(
-    "/epidemiologia/historico?municipio=3550308&ano=" + year,
+  const [municipio, setMunicipio] = useState(INICIAL);
+  const [year, setYear] = useState(current);
+  const catalogo = useMunicipios();
+  const malha = useMalha(municipio.id);
+  const query = "?municipio=" + municipio.id + "&ano=" + year;
+  const historico = useGeoResource("/epidemiologia/historico" + query);
+  const previsao = useGeoResource("/epidemiologia/previsao" + query);
+  const series = [...(historico.data?.indicadores || [])].sort((a, b) =>
+    String(a.inicioDaSemana).localeCompare(String(b.inicioDaSemana)),
   );
-  const forecast = useApi(
-    "/epidemiologia/previsao?municipio=3550308&ano=" + year,
-  );
-  const series = state.data?.indicadores || [];
-  const latest = series.at(-1);
+  const latest = ultimaSemana(series);
+  const situacao = classificarCasos(latest?.casosNotificados);
   const weeks = series.slice(-12);
   const maximum = Math.max(1, ...weeks.map((s) => s.casosNotificados || 0));
+  const periodo = latest
+    ? "SE " +
+      semanaEpidemiologica(latest.semanaEpidemiologica) +
+      " · semana iniciada em " +
+      latest.inicioDaSemana.split("-").reverse().join("/")
+    : "Ano de referência: " + year;
+  function atualizar() {
+    historico.reload();
+    previsao.reload();
+    malha.reload();
+  }
   return (
     <>
       <PageTitle
         eyebrow="INFORMAÇÃO PARA PREVENIR"
         title="GeoRadar"
-        description="Um olhar sobre os indicadores epidemiológicos de São Paulo."
+        description="Encontre seu município e acompanhe os casos no território."
       />
-      <form
-        className="geo-filters card"
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (draft === year) {
-            state.reload();
-            forecast.reload();
-          } else setYear(Number(draft));
-        }}
-      >
-        <Field label="Município">
-          <input value="São Paulo · IBGE 3550308" readOnly />
-        </Field>
-        <Field label="Ano de referência">
+      <div className="geo-filters card geo-filters-dynamic">
+        <MunicipioSearch
+          value={municipio}
+          onChange={setMunicipio}
+          catalogo={catalogo}
+        />
+        <Field label="Ano dos dados">
           <select
-            value={draft}
-            onChange={(e) => setDraft(Number(e.target.value))}
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
           >
             {Array.from({ length: current - 2009 }, (_, i) => (
               <option key={current - i} value={current - i}>
@@ -63,163 +73,200 @@ export default function GeoRadar() {
             ))}
           </select>
         </Field>
-        <Button type="submit">
+        <Button type="button" variant="secondary" onClick={atualizar}>
           <RefreshCw size={16} />
-          Consultar
+          Atualizar
         </Button>
-      </form>
-      {state.loading ? (
-        <Loading />
-      ) : state.error ? (
-        <ErrorState error={state.error} retry={state.reload} />
-      ) : !series.length ? (
-        <div className="card p-7">
-          <p>Nenhum indicador disponível nesse período.</p>
+      </div>
+      <p className="geo-selection-note">
+        <MapPin size={14} />
+        <strong>{nomeMunicipio(municipio)}</strong>
+        <span>{periodo}</span>
+      </p>
+      {historico.error && <Alert>{historico.error}</Alert>}
+      {!historico.loading && !historico.error && !series.length && (
+        <div className="geo-info-note" role="status">
+          Não há indicadores disponíveis para esse município no ano selecionado.
+          O mapa permanece sem classificação.
         </div>
-      ) : (
-        <>
-          <div className="metrics">
-            {[
-              [BarChart3, "Casos notificados", latest.casosNotificados],
-              [TrendingUp, "Casos estimados", latest.casosEstimados],
-              [MapPin, "Incidência por 100 mil", latest.incidenciaPor100Mil],
-            ].map(([Icon, label, value]) => (
-              <div key={label} className="metric-card card">
-                <div className="metric-label">
-                  <span>{label}</span>
-                  <Icon size={20} />
-                </div>
-                <strong>{numero(value)}</strong>
-                <small>
-                  Última semana disponível · SE{" "}
-                  {semana(latest.semanaEpidemiologica)}
-                </small>
+      )}
+      <div className="metrics geo-metrics">
+        {[
+          [BarChart3, "Casos notificados", latest?.casosNotificados],
+          [TrendingUp, "Casos estimados", latest?.casosEstimados],
+          [MapPin, "Incidência por 100 mil", latest?.incidenciaPor100Mil],
+        ].map(([Icon, label, value]) => (
+          <div key={label} className="metric-card card">
+            <div className="metric-label">
+              <span>{label}</span>
+              <Icon size={20} />
+            </div>
+            <strong>{historico.loading ? "…" : numero(value)}</strong>
+            <small>
+              {historico.loading
+                ? "Consultando o município…"
+                : "Última semana disponível do ano selecionado"}
+            </small>
+          </div>
+        ))}
+      </div>
+      <div className="geo-territory-grid">
+        <MunicipioMap
+          municipio={municipio}
+          malha={malha}
+          situacao={situacao}
+          casos={latest?.casosNotificados}
+          carregandoDados={historico.loading}
+        />
+        <aside className="card geo-risk-card">
+          <span className="eyebrow">CLASSIFICAÇÃO AEGIS</span>
+          <h2>Situação no período</h2>
+          <span className="academic-chip">Métrica acadêmica</span>
+          <div
+            className="risk-state"
+            style={{ "--situacao": situacao.cor }}
+            aria-live="polite"
+          >
+            <span />
+            {historico.loading ? "Consultando…" : situacao.nome}
+          </div>
+          <p className="risk-number">
+            {historico.loading ? "…" : numero(latest?.casosNotificados)}
+            <small>casos notificados na última semana disponível</small>
+          </p>
+          <p className="muted">{periodo}</p>
+          <div className="risk-rule-note">
+            <strong>Como a cor é definida?</strong>
+            <p>
+              A classificação usa a quantidade de casos notificados nessa
+              semana.
+            </p>
+            {[SITUACOES.OK, SITUACOES.INSTAVEL, SITUACOES.CRITICO].map((s) => (
+              <div key={s.codigo}>
+                <span style={{ background: s.cor }} />
+                <strong>{s.nome}</strong>
+                <small>{s.faixa}</small>
               </div>
             ))}
           </div>
-          <div className="geo-grid">
-            <section className="card map-card">
-              <div className="card-heading">
-                <div>
-                  <h2>São Paulo no mapa</h2>
-                  <p>
-                    Visão municipal · a base cartográfica não representa focos
-                    individuais.
-                  </p>
-                </div>
-              </div>
-              <iframe
-                title="Mapa de São Paulo no OpenStreetMap"
-                src="https://www.openstreetmap.org/export/embed.html?bbox=-46.86%2C-23.73%2C-46.36%2C-23.36&layer=mapnik"
-                loading="lazy"
-                referrerPolicy="no-referrer"
-              />
-              <div className="map-footer">
-                <span>Fonte cartográfica: OpenStreetMap</span>
-                <a
-                  className="text-link"
-                  href="https://info.dengue.mat.br/alerta/3550308/dengue"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Mapa epidemiológico InfoDengue
-                  <ArrowUpRight size={15} />
-                </a>
-              </div>
-            </section>
-            <section className="card p-6">
-              <span className="eyebrow">LEITURA DO PERÍODO</span>
-              <h2>Alerta municipal</h2>
-              <div
-                className={"alert-level level-" + (latest.nivelDeAlerta || 0)}
-              >
-                <span />
-                {{ 1: "Verde", 2: "Amarelo", 3: "Laranja", 4: "Vermelho" }[
-                  latest.nivelDeAlerta
-                ] || "Sem informação"}
-              </div>
-              <p className="muted">
-                Nível informado pelo InfoDengue na semana epidemiológica{" "}
-                {semana(latest.semanaEpidemiologica)} de {year}.
-              </p>
-              <hr className="my-6 border-[var(--line)]" />
-              <h3>Estimativa para a semana seguinte</h3>
-              {forecast.loading ? (
-                <Loading />
-              ) : forecast.error ? (
-                <p className="muted mt-3">{forecast.error}</p>
-              ) : (
-                <>
-                  <strong className="forecast-number">
-                    {numero(forecast.data?.casosEstimados)}
-                  </strong>
-                  <p className="muted">
-                    casos ·{" "}
-                    {forecast.data?.inicioDaSemana
-                      ?.split("-")
-                      .reverse()
-                      .join("/")}
-                  </p>
-                  <p className="form-note">
-                    {forecast.data?.metodo}. {forecast.data?.limitacoes}
-                  </p>
-                </>
-              )}
-            </section>
-          </div>
-          <section className="card chart-card">
-            <div className="card-heading">
-              <div>
-                <h2>Evolução de casos notificados</h2>
-                <p>
-                  Últimas {weeks.length} semanas disponíveis de {year} · Fonte:{" "}
-                  {state.data.fonte}
-                </p>
-              </div>
-              <BarChart3 size={22} />
-            </div>
-            <div
-              className="bar-chart"
-              role="img"
-              aria-label="Gráfico de casos notificados por semana epidemiológica"
-            >
-              {weeks.map((w) => (
-                <div className="chart-column" key={w.semanaEpidemiologica}>
-                  <span className="chart-value">
-                    {numero(w.casosNotificados)}
-                  </span>
-                  <div className="chart-bar-space">
-                    <div
-                      title={
-                        "Semana " +
-                        semana(w.semanaEpidemiologica) +
-                        ": " +
-                        numero(w.casosNotificados) +
-                        " casos"
-                      }
-                      className="chart-bar"
-                      style={{
-                        height:
-                          (w.casosNotificados == null
-                            ? 0
-                            : Math.max(
-                                1,
-                                (w.casosNotificados / maximum) * 100,
-                              )) + "%",
-                      }}
-                    />
-                  </div>
-                  <small>SE {semana(w.semanaEpidemiologica)}</small>
-                </div>
-              ))}
-            </div>
-            <p className="form-note px-6 pb-4">
-              Os dados correspondem ao ano selecionado e podem sofrer
-              atualizações na fonte.
+          <p className="form-note">
+            Escala de demonstração do protótipo. Sem dados disponíveis, o
+            município fica cinza e sem classificação.
+          </p>
+          <div className="official-alert">
+            <span className="label-caps">ALERTA PUBLICADO PELO INFODENGUE</span>
+            <strong>
+              {NOMES_ALERTA[latest?.nivelDeAlerta] || "Sem informação"}
+            </strong>
+            <p>
+              O alerta da fonte segue seus próprios critérios epidemiológicos.
             </p>
-          </section>
-        </>
-      )}
+            <a
+              className="text-link"
+              href={
+                "https://info.dengue.mat.br/alerta/" + municipio.id + "/dengue"
+              }
+              target="_blank"
+              rel="noreferrer"
+            >
+              Consultar InfoDengue
+              <ArrowUpRight size={14} />
+            </a>
+          </div>
+        </aside>
+      </div>
+      <section className="card geo-forecast-card">
+        <div>
+          <span className="eyebrow">PRÓXIMA SEMANA DO PERÍODO</span>
+          <h2>Estimativa de casos</h2>
+          <p className="muted">{nomeMunicipio(municipio)}</p>
+        </div>
+        <div>
+          {previsao.loading ? (
+            <p className="muted" role="status">
+              Calculando estimativa…
+            </p>
+          ) : previsao.error ? (
+            <p className="muted">{previsao.error}</p>
+          ) : (
+            <>
+              <strong className="forecast-number">
+                {numero(previsao.data?.casosEstimados)}
+              </strong>
+              <p className="muted">
+                Semana iniciada em{" "}
+                {previsao.data?.inicioDaSemana?.split("-").reverse().join("/")}
+              </p>
+            </>
+          )}
+        </div>
+        {previsao.data && (
+          <p className="form-note">
+            {previsao.data.metodo}. {previsao.data.limitacoes}
+          </p>
+        )}
+      </section>
+      <section className="card chart-card">
+        <div className="card-heading">
+          <div>
+            <h2>Evolução de casos notificados</h2>
+            <p>
+              {nomeMunicipio(municipio)} · {year} · Fonte: InfoDengue
+            </p>
+          </div>
+          <BarChart3 size={22} />
+        </div>
+        {historico.loading ? (
+          <div className="geo-chart-placeholder" role="status">
+            Consultando a evolução de casos…
+          </div>
+        ) : !weeks.length ? (
+          <div className="geo-chart-placeholder">
+            Gráfico indisponível para esse período.
+          </div>
+        ) : (
+          <div
+            className="bar-chart"
+            role="img"
+            aria-label={
+              "Casos notificados por semana em " + nomeMunicipio(municipio)
+            }
+          >
+            {weeks.map((w) => (
+              <div className="chart-column" key={w.semanaEpidemiologica}>
+                <span className="chart-value">
+                  {numero(w.casosNotificados)}
+                </span>
+                <div className="chart-bar-space">
+                  <div
+                    title={
+                      "Semana " +
+                      semanaEpidemiologica(w.semanaEpidemiologica) +
+                      ": " +
+                      numero(w.casosNotificados) +
+                      " casos"
+                    }
+                    className="chart-bar"
+                    style={{
+                      height:
+                        (w.casosNotificados == null || w.casosNotificados <= 0
+                          ? 0
+                          : Math.max(1, (w.casosNotificados / maximum) * 100)) +
+                        "%",
+                    }}
+                  />
+                </div>
+                <small>SE {semanaEpidemiologica(w.semanaEpidemiologica)}</small>
+              </div>
+            ))}
+          </div>
+        )}
+        <p className="form-note px-6 pb-4">
+          Os dados correspondem ao ano selecionado e podem ser revisados pelo
+          InfoDengue. Os casos exibidos não indicam a localização individual de
+          cada ocorrência.
+        </p>
+      </section>
     </>
   );
 }

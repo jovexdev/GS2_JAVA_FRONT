@@ -2453,3 +2453,598 @@ td,
     visibility: visible;
   }
 }
+
+/* GeoRadar: busca por nome e mapa municipal com classificação de casos. */
+.geo-filters-dynamic {
+  position: relative;
+  z-index: 10;
+  align-items: end;
+  gap: 16px;
+}
+.geo-filters-dynamic > .field {
+  flex: 0 0 170px;
+}
+.municipio-search {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+}
+.municipio-search > label {
+  font-size: 13px;
+  font-weight: 600;
+  display: block;
+  margin-bottom: 8px;
+}
+.municipio-input {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.municipio-input > svg {
+  position: absolute;
+  left: 13px;
+  color: #7b9278;
+  pointer-events: none;
+}
+.municipio-input input {
+  padding-left: 39px !important;
+  padding-right: 38px !important;
+}
+.municipio-input > button {
+  position: absolute;
+  right: 10px;
+  color: #819378;
+  padding: 5px;
+  border: 0;
+  background: transparent;
+  display: flex;
+}
+.municipio-dropdown {
+  position: absolute;
+  top: calc(100% + 7px);
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #dce6d5;
+  box-shadow: 0 14px 32px #173f351c;
+  border-radius: 11px;
+  padding: 6px;
+  z-index: 30;
+  max-height: 365px;
+  overflow: auto;
+}
+.municipio-dropdown ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.municipio-dropdown [role="option"] {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  border-radius: 7px;
+  padding: 11px;
+  cursor: pointer;
+  color: #71866b;
+}
+.municipio-dropdown [role="option"].is-active {
+  background: #edf4e5;
+  color: #31583e;
+}
+.municipio-dropdown [role="option"] > span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex: 1;
+  gap: 12px;
+  min-width: 0;
+}
+.municipio-dropdown strong {
+  font-size: 13px;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.municipio-dropdown small {
+  font-size: 10px;
+  color: #7f9177;
+}
+.municipio-feedback {
+  padding: 14px;
+  font-size: 12px;
+  color: #78896e;
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.municipio-feedback button {
+  color: #3e7046;
+  text-decoration: underline;
+}
+.municipio-dropdown .municipio-dropdown-note {
+  display: block;
+  border-top: 1px solid #edf1e8;
+  margin: 6px 6px 0;
+  padding: 10px 4px 4px;
+  font-size: 9px;
+}
+.geo-selection-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  color: #7b8d71;
+  margin: -8px 0 20px;
+}
+.geo-selection-note strong {
+  font-weight: 600;
+  color: #5d7654;
+}
+.geo-selection-note > span {
+  padding-left: 10px;
+  border-left: 1px solid #dbe4d3;
+  margin-left: 3px;
+}
+.geo-territory-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.4fr) minmax(260px, 1fr);
+  gap: 22px;
+  align-items: start;
+}
+.municipio-map-card {
+  overflow: hidden;
+  min-width: 0;
+}
+.municipio-map-card .card-heading {
+  align-items: center;
+}
+.municipio-map-card .card-heading .eyebrow {
+  margin-bottom: 9px;
+  font-size: 8px;
+}
+.municipio-map-card .card-heading h2 {
+  font-size: 20px;
+}
+.municipio-map-card .card-heading .button {
+  font-size: 10px;
+  padding: 9px 12px;
+  min-height: 36px;
+}
+.municipio-map-frame {
+  position: relative;
+}
+.municipio-map {
+  height: 510px;
+  width: 100%;
+  background: #e9efe5;
+  isolation: isolate;
+  z-index: 0;
+  font-family: var(--font-sans);
+}
+.municipio-map .leaflet-tile-pane {
+  filter: saturate(0.35) brightness(1.03);
+}
+.municipio-map .leaflet-overlay-pane {
+  filter: none;
+}
+.municipio-map .leaflet-control-attribution {
+  font-size: 9px;
+  background: #ffffffdb;
+}
+.municipio-map .leaflet-control-zoom {
+  border: 1px solid #d5dfcf !important;
+  box-shadow: 0 3px 12px #173f3514;
+}
+.municipio-map .leaflet-control-zoom a {
+  color: #40633e;
+  background: white;
+}
+.municipio-map .leaflet-control-scale-line {
+  font-size: 9px;
+}
+.map-message {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: #f3f7eddd;
+  padding: 30px;
+  text-align: center;
+  font-size: 13px;
+  color: #6c865c;
+}
+.map-message-error button {
+  font-size: 12px;
+  color: #34663e;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.map-status {
+  position: absolute;
+  left: 18px;
+  top: 18px;
+  z-index: 4;
+  background: #ffffffed;
+  border: 1px solid #dde6d5;
+  box-shadow: 0 3px 15px #173f3510;
+  border-radius: 10px;
+  padding: 12px 15px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #46643c;
+  pointer-events: none;
+}
+.map-status > span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--situacao);
+}
+.map-status small {
+  grid-column: 2;
+  font-size: 8px;
+  font-weight: 400;
+  letter-spacing: 0.4px;
+  color: #7c9070;
+  margin-top: 4px;
+}
+.municipio-map-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 17px;
+  padding: 16px 20px;
+  border-top: 1px solid #e4ebde;
+  align-items: center;
+}
+.municipio-map-legend > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  color: #69825d;
+}
+.municipio-map-legend i {
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+}
+.municipio-map-legend > small {
+  font-size: 9px;
+  color: #7d9071;
+  margin-left: auto;
+}
+.municipio-map-card .map-footer {
+  border-top: 1px solid #edf1e8;
+  line-height: 1.7;
+}
+.municipio-popup {
+  font-family: var(--font-sans);
+  min-width: 170px;
+  padding: 4px 2px;
+}
+.municipio-popup strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: #31543c;
+}
+.municipio-popup p {
+  font-size: 11px !important;
+  color: #617953;
+  margin: 10px 0 !important;
+  line-height: 1.6;
+}
+.tile-warning {
+  position: absolute;
+  bottom: 30px;
+  left: 15px;
+  right: 15px;
+  z-index: 4;
+  background: #fff9e9f0;
+  border: 1px solid #efe1bb;
+  border-radius: 6px;
+  padding: 8px 10px;
+  font-size: 10px;
+  color: #8c7747;
+}
+.geo-risk-card {
+  padding: 25px;
+}
+.geo-risk-card h2 {
+  font-size: 20px;
+}
+.academic-chip {
+  display: inline-flex;
+  font-size: 8px;
+  color: #7b9270;
+  border: 1px solid #dce7d3;
+  background: #f8fbf3;
+  border-radius: 4px;
+  padding: 4px 7px;
+  margin-top: 12px;
+}
+.risk-state {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--situacao);
+  margin: 22px 0 10px;
+  letter-spacing: -0.5px;
+}
+.risk-state > span {
+  width: 11px;
+  height: 11px;
+  background: var(--situacao);
+  border-radius: 50%;
+}
+.risk-number {
+  font-size: 31px;
+  line-height: 1.2;
+  font-weight: 500;
+  margin-bottom: 15px;
+}
+.risk-number small {
+  display: block;
+  font-size: 11px;
+  color: #738669;
+  font-weight: 400;
+  margin-top: 7px;
+  line-height: 1.6;
+}
+.geo-risk-card > .muted {
+  font-size: 10px;
+}
+.risk-rule-note {
+  background: #f7faf2;
+  border: 1px solid #e3ebd9;
+  border-radius: 9px;
+  padding: 14px;
+  margin-top: 20px;
+}
+.risk-rule-note > strong {
+  font-size: 11px;
+  font-weight: 600;
+}
+.risk-rule-note > p {
+  font-size: 10px;
+  color: #7c9070;
+  margin: 7px 0 13px;
+}
+.risk-rule-note > div {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 0;
+  border-top: 1px solid #e6eddc;
+}
+.risk-rule-note > div > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+}
+.risk-rule-note > div strong {
+  font-size: 10px;
+  font-weight: 500;
+}
+.risk-rule-note > div small {
+  font-size: 9px;
+  color: #7d8f73;
+  margin-left: auto;
+}
+.geo-risk-card > .form-note {
+  font-size: 9px;
+  line-height: 1.8;
+}
+.official-alert {
+  border-top: 1px solid #e3eadd;
+  padding-top: 20px;
+  margin-top: 20px;
+}
+.official-alert .label-caps {
+  font-size: 8px;
+  letter-spacing: 1px;
+}
+.official-alert > strong {
+  display: block;
+  font-size: 15px;
+  font-weight: 500;
+  margin: 10px 0;
+}
+.official-alert p {
+  font-size: 10px;
+  color: #7d8f72;
+  margin-bottom: 14px;
+}
+.official-alert .text-link {
+  font-size: 10px;
+}
+.geo-forecast-card {
+  margin-top: 22px;
+  padding: 24px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 30px;
+  align-items: center;
+}
+.geo-forecast-card .forecast-number {
+  margin-top: 0;
+}
+.geo-forecast-card > .form-note {
+  grid-column: 1/-1;
+  margin-bottom: 0;
+}
+.geo-chart-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 230px;
+  padding: 30px;
+  text-align: center;
+  color: #8a9e7b;
+  font-size: 13px;
+}
+@media (max-width: 1200px) {
+  .geo-territory-grid {
+    grid-template-columns: minmax(0, 1.8fr) minmax(230px, 1fr);
+  }
+  .geo-risk-card {
+    padding: 20px;
+  }
+  .municipio-map {
+    height: 540px;
+  }
+  .municipio-map-card .card-heading .button span {
+    display: none;
+  }
+  .municipio-map-card .card-heading h2 {
+    font-size: 18px;
+  }
+  .municipio-map-legend {
+    gap: 12px;
+  }
+  .municipio-map-legend > small {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+@media (max-width: 1000px) {
+  .geo-territory-grid {
+    grid-template-columns: 1fr;
+  }
+  .municipio-map {
+    height: 460px;
+  }
+  .geo-risk-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    column-gap: 30px;
+  }
+  .geo-risk-card > .eyebrow,
+  .geo-risk-card > h2,
+  .geo-risk-card > .academic-chip,
+  .geo-risk-card > .risk-state,
+  .geo-risk-card > .risk-number,
+  .geo-risk-card > .muted {
+    grid-column: 1;
+  }
+  .geo-risk-card > .academic-chip {
+    justify-self: start;
+  }
+  .risk-rule-note {
+    grid-column: 2;
+    grid-row: 2/7;
+    margin-top: 0;
+    align-self: center;
+  }
+  .geo-risk-card > .form-note {
+    grid-column: 1/-1;
+  }
+  .official-alert {
+    grid-column: 1/-1;
+  }
+  .geo-filters-dynamic {
+    flex-wrap: wrap;
+  }
+  .geo-filters-dynamic > .field {
+    flex: 0 0 140px;
+  }
+  .geo-filters-dynamic .municipio-search {
+    min-width: 220px;
+  }
+}
+@media (max-width: 700px) {
+  .geo-filters-dynamic {
+    gap: 16px;
+  }
+  .geo-filters-dynamic .municipio-search {
+    min-width: 0;
+    flex: 0 0 100%;
+  }
+  .geo-filters-dynamic > .field {
+    min-width: 0;
+    flex: 1;
+  }
+  .geo-filters-dynamic > .button {
+    width: auto;
+  }
+  .geo-selection-note {
+    font-size: 10px;
+    gap: 6px;
+  }
+  .geo-selection-note > span {
+    width: 100%;
+    padding: 0;
+    border: 0;
+    margin: 2px 0 0;
+  }
+  .municipio-map {
+    height: 420px;
+  }
+  .municipio-map-card .card-heading {
+    padding: 18px;
+  }
+  .municipio-map-card .card-heading p {
+    font-size: 10px;
+  }
+  .municipio-map-card .card-heading h2 {
+    font-size: 18px;
+  }
+  .map-status {
+    left: 12px;
+    top: 12px;
+    padding: 10px 12px;
+  }
+  .municipio-map-legend {
+    gap: 12px;
+    padding: 15px;
+  }
+  .municipio-map-card .map-footer {
+    font-size: 8px;
+  }
+  .geo-risk-card {
+    display: block;
+  }
+  .geo-risk-card > .academic-chip {
+    display: inline-flex;
+  }
+  .risk-rule-note {
+    margin-top: 20px;
+  }
+  .geo-forecast-card {
+    padding: 20px;
+    grid-template-columns: 1fr;
+  }
+  .geo-forecast-card > .form-note {
+    grid-column: 1;
+  }
+  .geo-forecast-card .forecast-number {
+    margin-top: 10px;
+  }
+}
+
+.municipio-dropdown [role="option"]:hover {
+  background: #edf4e5;
+  color: #31583e;
+}
+.geo-info-note {
+  font-size: 12px;
+  background: #edf1f1;
+  border: 1px solid #dbe4e3;
+  border-radius: 9px;
+  color: #667d77;
+  padding: 15px 18px;
+  margin-bottom: 20px;
+  line-height: 1.7;
+}
