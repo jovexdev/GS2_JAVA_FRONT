@@ -2,7 +2,12 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { Check, LoaderCircle, MapPin, Search, X } from "lucide-react";
 import { buscarMunicipios, nomeMunicipio } from "../georadar";
 
-export default function MunicipioSearch({ value, onChange, catalogo }) {
+export default function MunicipioSearch({
+  value,
+  onChange,
+  catalogo,
+  instrucao = "Selecione um resultado para atualizar o GeoRadar.",
+}) {
   const id = useId();
   const input = useRef(null);
   const [texto, setTexto] = useState(nomeMunicipio(value));
@@ -135,9 +140,7 @@ export default function MunicipioSearch({ value, onChange, catalogo }) {
               </li>
             ))}
           </ul>
-          <small className="municipio-dropdown-note">
-            Selecione um resultado para atualizar o GeoRadar.
-          </small>
+          <small className="municipio-dropdown-note">{instrucao}</small>
         </div>
       )}
     </div>

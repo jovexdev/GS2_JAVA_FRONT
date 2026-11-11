@@ -1,4 +1,4 @@
-import React from "react";
+import React, { lazy, Suspense } from "react";
 import ReactDOM from "react-dom/client";
 import {
   BrowserRouter,
@@ -18,6 +18,7 @@ import { Attendances, AttendanceDetail } from "./pages/Attendances";
 import Establishment from "./pages/Establishment";
 import GeoRadar from "./pages/GeoRadar";
 import Lia from "./pages/Lia";
+const MinhaSaude = lazy(() => import("./pages/MinhaSaude"));
 import "./styles.css";
 
 function Protected({ roles }) {
@@ -54,6 +55,14 @@ function App() {
               <Route element={<Protected roles={["CIDADAO"]} />}>
                 <Route path="georadar" element={<GeoRadar />} />
                 <Route path="lia" element={<Lia />} />
+                <Route
+                  path="minha-saude"
+                  element={
+                    <Suspense fallback={<Loading />}>
+                      <MinhaSaude />
+                    </Suspense>
+                  }
+                />
               </Route>
             </Route>
           </Route>

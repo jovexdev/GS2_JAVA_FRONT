@@ -125,3 +125,21 @@ npm run dev
 `src/pages` contém as telas; `src/components`, os componentes comuns; `src/api.js`, a comunicação HTTP; `src/auth.jsx`, a sessão; e `src/styles.css`, o tema com Tailwind. O `package-lock.json` fixa as versões instaladas.
 
 A documentação das ferramentas está em [React](https://react.dev/learn/build-a-react-app-from-scratch), [Vite](https://vite.dev/guide/) e [Tailwind com Vite](https://tailwindcss.com/docs/installation/using-vite).
+
+## Minha saúde — área do cidadão
+
+Entre como **Cidadão** e abra **Minha saúde** no menu. Esta aba reúne:
+
+- Questionário escrito para a LIA organizar sintomas e orientar a procura de atendimento, sem confirmar ou descartar dengue.
+- Identificação inicial de sinais de alarme: a orientação para buscar urgência aparece imediatamente, sem esperar pelo GPT.
+- Busca pelo nome e UF do município, com filtro por bairro ou nome da unidade.
+- UPAs e pronto atendimento SUS ativos no CNES, apresentados em mapa e lista, com endereço, telefone e horário cadastrado quando disponíveis.
+- Localização opcional para ordenar por distância em linha reta, com trajetos de carro ou a pé abertos no Google Maps.
+
+As rotas novas são `GET /api/cidadao/unidades-saude` e `POST /api/cidadao/orientacao`, ambas autenticadas e exclusivas do cidadão. Execute o **AegisApplication** atualizado no IntelliJ e o frontend no VS Code. Não é necessário rodar outro SQL ou instalar dependências novas.
+
+O CNES e os links de mapas não exigem chave paga ou faturamento. O questionário pede autorização antes de enviar as respostas à OpenAI e usa os créditos da chave GPT já configurada no Java. As respostas não são gravadas no banco do AEGIS. Se a IA estiver indisponível, a tela informa isso e exibe uma orientação de referência.
+
+A localização não é enviada ao Java ou ao GPT; fica no navegador e entra no link de navegação somente ao abrir uma rota. Você pode usar apenas município e bairro. O AEGIS não calcula tempo de trajeto nem filas, e os dados cadastrais do CNES não confirmam atendimento em tempo real. Unidades sem coordenadas continuam disponíveis na lista, com rota baseada no endereço.
+
+A implementação está em `src/pages/MinhaSaude.jsx`, `src/components/UnidadesSaudeMap.jsx` e `src/saude.js`. Os testes em `tests/saude.test.js` verificam busca sem acentos, distância e geração do link sem credenciais ou respostas de saúde.

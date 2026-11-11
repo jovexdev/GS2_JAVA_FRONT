@@ -5,6 +5,7 @@ import {
   Building2,
   ClipboardList,
   FilePlus2,
+  HeartPulse,
   LayoutDashboard,
   LogOut,
   Map,
@@ -20,6 +21,7 @@ export const NAVS = {
   CIDADAO: [
     ["", "Visão geral", LayoutDashboard],
     ["georadar", "GeoRadar", Map],
+    ["minha-saude", "Minha saúde", HeartPulse],
     ["ocorrencias", "Minhas ocorrências", ClipboardList],
     ["nova-ocorrencia", "Registrar ocorrência", FilePlus2],
     ["lia", "Conversar com LIA", MessageCircle],
