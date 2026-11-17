@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
@@ -16,6 +16,7 @@ import { useAuth } from "../auth";
 import { api } from "../api";
 import { BASE_DEMO, modoDemo } from "../demo";
 import { PERFIS, SENHA_DEMO } from "../constants";
+import { aguardarServico, despertarServico } from "../servicoLogin";
 import { Alert, Brand, Button, Field } from "../components/ui";
 
 const ICONES = {
@@ -27,6 +28,12 @@ const ICONES = {
 const demoPublica = import.meta.env.VITE_DEMO_PUBLICA === "true";
 const mostrarContas =
   modoDemo || demoPublica || import.meta.env.VITE_DEMO_ACCOUNTS !== "false";
+const urlInicializacao = modoDemo
+  ? import.meta.env.VITE_DEMO_WAKE_URL
+  : import.meta.env.VITE_API_WAKE_URL;
+const despertar = urlInicializacao
+  ? (signal) => despertarServico(urlInicializacao, signal)
+  : undefined;
 
 export default function Login() {
   const { user, login } = useAuth();
@@ -46,15 +53,38 @@ export default function Login() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [online, setOnline] = useState(null);
-  useEffect(() => {
-    const c = new AbortController();
-    api("/saude", { signal: c.signal })
-      .then(() => setOnline(true))
-      .catch((e) => {
-        if (e.name !== "AbortError") setOnline(false);
+  const verificacao = useRef(null);
+  const prepararAcesso = useCallback(() => {
+    if (verificacao.current) return verificacao.current.promessa;
+    const controle = new AbortController();
+    setOnline(null);
+    const promessa = aguardarServico((signal) => api("/saude", { signal }), {
+      signal: controle.signal,
+      despertar,
+    })
+      .then(
+        () => {
+          if (!controle.signal.aborted) setOnline(true);
+        },
+        (erro) => {
+          if (!controle.signal.aborted) setOnline(false);
+          throw erro;
+        },
+      )
+      .finally(() => {
+        if (verificacao.current?.controle === controle)
+          verificacao.current = null;
       });
-    return () => c.abort();
+    verificacao.current = { controle, promessa };
+    return promessa;
   }, []);
+  useEffect(() => {
+    void prepararAcesso().catch(() => {});
+    return () => {
+      verificacao.current?.controle.abort();
+      verificacao.current = null;
+    };
+  }, [prepararAcesso]);
   if (user && !perfilDemo) return <Navigate to="/app" replace />;
   function choose(value) {
     setPerfil(value);
@@ -76,10 +106,11 @@ export default function Login() {
     setBusy(true);
     setError("");
     try {
+      await prepararAcesso();
       await login(email.trim(), senha, perfil);
       navigate("/app", { replace: true });
     } catch (e) {
-      setError(e.message);
+      if (e.name !== "AbortError") setError(e.message);
     } finally {
       setBusy(false);
     }
@@ -141,10 +172,15 @@ export default function Login() {
       <section className="auth-content">
         <div className="auth-top">
           <span>PREVENÇÃO QUE CONECTA</span>
-          <span className={"service-indicator " + (online ? "is-online" : "")}>
+          <span
+            role="status"
+            className={"service-indicator " + (online ? "is-online" : "")}
+          >
             <span />
             {online === null
-              ? "Verificando serviço"
+              ? urlInicializacao
+                ? "Preparando o acesso"
+                : "Verificando serviço"
               : online
                 ? "Serviço online"
                 : "Serviço indisponível"}
@@ -193,6 +229,13 @@ export default function Login() {
                 })}
               </div>
             </fieldset>
+            {urlInicializacao && online === null && (
+              <p className="form-note">
+                O servidor gratuito pode levar cerca de um minuto para iniciar.
+                Se clicar em Entrar, o login continuará assim que o serviço
+                estiver pronto.
+              </p>
+            )}
             <Alert>{error}</Alert>
             <Field label="E-mail">
               <input
@@ -226,7 +269,11 @@ export default function Login() {
               </span>
             </Field>
             <Button className="w-full login-submit" type="submit" busy={busy}>
-              Entrar como {PERFIS[perfil].nome}
+              {busy
+                ? online === null
+                  ? "Aguardando o serviço…"
+                  : "Entrando…"
+                : "Entrar como " + PERFIS[perfil].nome}
               <ArrowRight size={18} />
             </Button>
             <p className="signup-line">
