@@ -1,3 +1,5 @@
+import { BASE_DEMO, modoDemo } from "./demo.js";
+
 export class ApiError extends Error {
   constructor(message, status) {
     super(message);
@@ -12,7 +14,7 @@ export async function api(
 ) {
   let response;
   try {
-    response = await fetch("/api" + path, {
+    response = await fetch((modoDemo ? BASE_DEMO : "") + "/api" + path, {
       method,
       credentials: "include",
       signal,

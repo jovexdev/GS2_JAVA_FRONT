@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../auth";
 import { PERFIS } from "../constants";
+import { modoDemo } from "../demo";
 import { Alert, Brand, Button } from "./ui";
 export const NAVS = {
   CIDADAO: [
@@ -192,6 +193,14 @@ export default function Layout() {
           </div>
         </header>
         <main id="conteudo" className="workspace" tabIndex="-1">
+          {modoDemo && (
+            <p className="form-note">
+              Ambiente de demonstração · use dados fictícios.{" "}
+              <a className="text-link" href="/entrar">
+                Ir ao acesso principal
+              </a>
+            </p>
+          )}
           <Alert>{error}</Alert>
           <Outlet />
         </main>

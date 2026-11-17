@@ -8,6 +8,7 @@ import {
   Routes,
 } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth";
+import { BASE_DEMO, modoDemo } from "./demo";
 import { Loading } from "./components/ui";
 import Layout from "./components/Layout";
 import Login from "./pages/Login";
@@ -31,7 +32,7 @@ function Protected({ roles }) {
 }
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={modoDemo ? BASE_DEMO : "/"}>
       <AuthProvider>
         <Routes>
           <Route path="/entrar" element={<Login />} />

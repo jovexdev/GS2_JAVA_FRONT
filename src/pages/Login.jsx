@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../auth";
 import { api } from "../api";
+import { BASE_DEMO, modoDemo } from "../demo";
 import { PERFIS, SENHA_DEMO } from "../constants";
 import { Alert, Brand, Button, Field } from "../components/ui";
 
@@ -23,12 +24,24 @@ const ICONES = {
   CIDADAO: Users,
   EMPRESA: Building2,
 };
+const demoPublica = import.meta.env.VITE_DEMO_PUBLICA === "true";
+const mostrarContas =
+  modoDemo || demoPublica || import.meta.env.VITE_DEMO_ACCOUNTS !== "false";
+
 export default function Login() {
   const { user, login } = useAuth();
   const navigate = useNavigate();
-  const [perfil, setPerfil] = useState("CIDADAO");
-  const [email, setEmail] = useState("");
-  const [senha, setSenha] = useState("");
+  const parametros = new URLSearchParams(window.location.search);
+  const solicitado = parametros.get("perfil");
+  const perfilDemo =
+    modoDemo && Object.hasOwn(PERFIS, solicitado) ? solicitado : null;
+  const emailDemo =
+    perfilDemo === "AGENTE" && parametros.get("equipe") === "sul"
+      ? "agente.sul@demo.aegis.test"
+      : PERFIS[perfilDemo]?.email;
+  const [perfil, setPerfil] = useState(perfilDemo || "CIDADAO");
+  const [email, setEmail] = useState(emailDemo || "");
+  const [senha, setSenha] = useState(perfilDemo ? SENHA_DEMO : "");
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -42,12 +55,18 @@ export default function Login() {
       });
     return () => c.abort();
   }, []);
-  if (user) return <Navigate to="/app" replace />;
+  if (user && !perfilDemo) return <Navigate to="/app" replace />;
   function choose(value) {
     setPerfil(value);
     setError("");
   }
   function preencher(value, customEmail) {
+    if (demoPublica && !modoDemo) {
+      const selecao = new URLSearchParams({ perfil: value });
+      if (customEmail) selecao.set("equipe", "sul");
+      window.location.assign(BASE_DEMO + "/entrar?" + selecao);
+      return;
+    }
     choose(value);
     setEmail(customEmail || PERFIS[value].email);
     setSenha(SENHA_DEMO);
@@ -221,14 +240,24 @@ export default function Login() {
               )}
             </p>
           </form>
-          {import.meta.env.VITE_DEMO_ACCOUNTS !== "false" && (
+          {modoDemo && (
+            <p className="signup-line">
+              Ambiente de demonstração · use dados fictícios.{" "}
+              <a href="/entrar">Ir ao acesso principal</a>
+            </p>
+          )}
+          {mostrarContas && (
             <details className="demo-accounts" open>
               <summary>
                 <Sparkles size={16} />
                 <strong>Experimente os quatro perfis</strong>
                 <span>CONTAS DE TESTE</span>
               </summary>
-              <p>Selecione uma conta para preencher o acesso.</p>
+              <p>
+                {demoPublica && !modoDemo
+                  ? "Escolha uma conta para abrir a demonstração com dados fictícios."
+                  : "Selecione uma conta para preencher o acesso."}
+              </p>
               <div className="demo-list">
                 {Object.entries(PERFIS).map(([key, p]) => (
                   <button
@@ -254,11 +283,17 @@ export default function Login() {
                   <ArrowRight size={14} />
                 </button>
               </div>
-              <div className="demo-password">
-                Senha de todas as contas <code>{SENHA_DEMO}</code>
-              </div>
+              {(!demoPublica || modoDemo) && (
+                <div className="demo-password">
+                  Senha de todas as contas <code>{SENHA_DEMO}</code>
+                </div>
+              )}
               <p className="demo-note">
-                Disponíveis quando a base de demonstração estiver carregada.
+                {modoDemo
+                  ? "A base é compartilhada e volta aos dados iniciais quando reinicia."
+                  : demoPublica
+                    ? "Inclui ocorrências, estabelecimentos, equipes e vistorias de exemplo."
+                    : "Disponíveis quando a base de demonstração estiver carregada."}
               </p>
             </details>
           )}
