@@ -221,45 +221,47 @@ export default function Login() {
               )}
             </p>
           </form>
-          <details className="demo-accounts" open>
-            <summary>
-              <Sparkles size={16} />
-              <strong>Experimente os quatro perfis</strong>
-              <span>CONTAS DE TESTE</span>
-            </summary>
-            <p>Selecione uma conta para preencher o acesso.</p>
-            <div className="demo-list">
-              {Object.entries(PERFIS).map(([key, p]) => (
+          {import.meta.env.VITE_DEMO_ACCOUNTS !== "false" && (
+            <details className="demo-accounts" open>
+              <summary>
+                <Sparkles size={16} />
+                <strong>Experimente os quatro perfis</strong>
+                <span>CONTAS DE TESTE</span>
+              </summary>
+              <p>Selecione uma conta para preencher o acesso.</p>
+              <div className="demo-list">
+                {Object.entries(PERFIS).map(([key, p]) => (
+                  <button
+                    type="button"
+                    key={key}
+                    onClick={() => preencher(key)}
+                    aria-label={"Usar conta de teste " + p.nome}
+                  >
+                    <span>{p.nome}</span>
+                    <code>{p.email}</code>
+                    <ArrowRight size={14} />
+                  </button>
+                ))}
                 <button
                   type="button"
-                  key={key}
-                  onClick={() => preencher(key)}
-                  aria-label={"Usar conta de teste " + p.nome}
+                  onClick={() =>
+                    preencher("AGENTE", "agente.sul@demo.aegis.test")
+                  }
+                  aria-label="Usar conta de teste Agente Sul"
                 >
-                  <span>{p.nome}</span>
-                  <code>{p.email}</code>
+                  <span>Agente Sul</span>
+                  <code>agente.sul@demo.aegis.test</code>
                   <ArrowRight size={14} />
                 </button>
-              ))}
-              <button
-                type="button"
-                onClick={() =>
-                  preencher("AGENTE", "agente.sul@demo.aegis.test")
-                }
-                aria-label="Usar conta de teste Agente Sul"
-              >
-                <span>Agente Sul</span>
-                <code>agente.sul@demo.aegis.test</code>
-                <ArrowRight size={14} />
-              </button>
-            </div>
-            <div className="demo-password">
-              Senha de todas as contas <code>{SENHA_DEMO}</code>
-            </div>
-            <p className="demo-note">
-              Disponíveis quando a base de demonstração estiver carregada.
-            </p>
-          </details>
+              </div>
+              <div className="demo-password">
+                Senha de todas as contas <code>{SENHA_DEMO}</code>
+              </div>
+              <p className="demo-note">
+                Disponíveis quando a base de demonstração estiver carregada.
+              </p>
+            </details>
+          )}
         </div>
         <footer className="auth-footer">
           <span>AEGIS · Rede de proteção contra a dengue</span>
